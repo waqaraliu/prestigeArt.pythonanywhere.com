@@ -1,0 +1,1037 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% comment %} Extra Title {% endcomment %}
+{% block extra_title %}Product Detail{% endblock %}
+
+{% block content %}
+<div class="product__main">
+  <div class="product__main--image">
+    {% comment %} Get discount data {% endcomment %}
+    {% if product.get_sale_price_is_lower_than_store_price %}
+      <div class="product__card--discount">
+        <img src="{% static 'images/sale.png' %}" alt="sale Image">
+      </div>
+    {% endif %}
+    {% comment %} Get new product data {% endcomment %}
+    {% if product.get_recently_created %}
+      <div class="product__card--new">
+        New !
+      </div>
+    {% endif %}
+    {% comment %} Carousel for products images {% endcomment %}
+    <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel" data-interval="false">
+      {% if active_images and active_images|length > 1 %}
+        {% for image in active_images %}
+        {% endfor %}
+      {% endif %}
+      <div class="carousel-inner">
+        {% if active_images and active_images|length > 1 %}
+          {% for image in active_images %}
+            {% if image.default_image %}
+              <div class="carousel-item active">
+                <img class="block align-middle" src="{{ image.image.url }}" alt="{{ image.alt_text }}">
+              </div>
+            {% elif image.is_active %}
+              <div class="carousel-item align-middle">
+                <img class="block  align-middle" src="{{ image.image.url }}" alt="{{ image.alt_text }}">
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% elif active_images and active_images|length == 1 %}
+          {% for image in active_images %}
+            <div class="carousel-item active">
+              <img class="d-block" src="{{ image.image.url }}" alt="{{ image.alt_text }}">
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="carousel-item active">
+            <img src="{% static 'images/default_product_image.png' %}" alt="default product Image">
+          </div>
+        {% endif %}
+      </div>
+      {% if active_images and active_images|length > 1 %}
+        <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true">
+            <i class="fas fa-chevron-left"></i>
+          </span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true">
+            <i class="fas fa-chevron-right"></i>
+          </span>
+          <span class="visually-hidden">Next</span>
+        </button>
+      {% endif %}
+    </div>
+    {% comment %} Wishlist control buttons {% endcomment %}
+    <div class="product__main--rating--wishlist">
+      <div class="product__card--wishlist">
+        {% if request.user.is_authenticated %}
+          {% if product in request.user.wishlist.get_products %}
+            <div class="rating__title">
+              Remove from wishlist:
+            </div>
+            <button class="like btn" id="wishlist-control" type="button" aria-label="unlike button">
+              <i class="fas fa-heart"></i>
+            </button>
+          {% else %}
+            <div class="rating__title">
+              Add to wishlist:
+            </div>
+            <button class="like btn" id="wishlist-control" type="button" aria-label="like button">
+              <i class="far fa-heart"></i>
+            </button>
+          {% endif %}
+        {% else %}
+          <div class="rating__title">
+            Login to add to your wishlist:
+          </div>
+          <button class="like btn" id="wishlist-control" type="button" aria-label="like button">
+            <i class="far fa-heart"></i>
+          </button>
+        {% endif %}
+      </div>
+      {% comment %} Product's rating section {% endcomment %}
+      <div class="product__card--rating">
+        <div class="rating__title">
+          Rating:
+        </div>
+        {% if product.get_average_rating %}
+          <div class="rating__data">
+            <i class="fas fa-star"></i>
+            <div>{{ product.get_average_rating }}</div>
+          </div>
+          {% comment %} Go to reviews {% endcomment %}
+          <a href="{% url 'view_all_products_reviews' product_id=product.id %}"
+              aria-label="Go to view reviews details on th poduct" class="rating__data--reviews btn btn__redirect">
+            View reviews
+          </a>
+        {% else %}
+          <div class="rating__data">
+            <i class="far fa-star"></i>
+            No rating yet
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% comment %} Product's details info {% endcomment %}
+  <div class="product__main--info">
+    <div data-id="{{ product.id }}" id="product">
+      <div class="product__title">
+        {{ product.name }}
+      </div>
+    </div>
+    <div class="product__description">
+      <p>{{ product.description }}</p>
+    </div>
+    {% comment %} Reset buttons {% endcomment %}
+    {% if not product.get_out_of_stock %}
+      <button class="btn btn-secondary btn__reset" id="reset-button" type="button" data-attributevalue="reset" aria-label="Reset chosen options">
+        <i class="fas fa-undo"></i>
+        Reset
+      </button>
+    {% endif %}
+    {% comment %} Form for product's values {% endcomment %}
+    <form class="product__variants form" action="#"  id="form">
+    <!--
+      {% for k,v in attribute_values_dict.items %}
+        <div class="product__options form__section">
+          <p data-attribute="{{ k }}" class="product__options--title">{{ k }}</p>
+          <div class="product__options--input">
+            <div class="btn-group" role="group" aria-label="Basic radio toggle button group" data-group-name="{{ k }}">
+              {% for item in v %}
+                {% if item in values_set %}
+                  {% if item in values_set_active %}
+                    <input type="radio" class="btn-check option" name="{{ k }}" id="{{ k }}-{{ forloop.counter }}" value="{{ item }}" aria-label="Choose value">
+                    <label class="btn btn-outline-primary" for="{{ k }}-{{ forloop.counter }}" data-labelid="{{ item }}">{{ item }}</label>
+                  {% else %}
+                    <input type="radio" class="btn-check option item__not__available" name="{{ k }}" id="{{ k }}-{{ forloop.counter }}" value="{{ item }}" aria-label="Choose value">
+                    <label class="btn btn-outline-primary disabled" for="{{ k }}-{{ forloop.counter }}" data-labelid="{{ item }}">{{ item }}</label>
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+      -->
+      {% comment %} Price options {% endcomment %}
+      <div class="form__section">
+        <div class="product__options--title"> price</div>
+        <div class="product__price" id="item-price">
+          <div class="">
+            {% if product.get_out_of_stock %}
+              <div class="product__card--price price__sale out_of_stock">
+                <p>Out of stock</p>
+              </div>
+            {% elif product.get_same_sale_price %}
+              {% if product.get_sale_price_is_lower_than_store_price %}
+                <div class="product__card--price price__regular" style="color:red;">
+                  Rs {{ product.get_lowest_store_price }}
+                </div>
+                <div class="product__card--price price__sale">
+                  Rs {{ product.get_lowest_price }}
+                </div>
+              {% else %}
+                <div class="product__card--price">
+                  Rs {{ product.get_lowest_price }}
+                </div>
+              {% endif %}
+            {% else %}
+              {% if product.get_sale_price_is_lower_than_store_price %}
+                <div class="product__card--price price__regular">
+                  Rs {{ product.get_lowest_store_price }} - {{ product.get_highest_store_price }}
+                </div>
+                <div class="product__card--price price__sale">
+                  Rs {{ product.get_lowest_price }} - {{ product.get_highest_price }}
+                </div>
+              {% else %}
+                <div class="product__card--price">
+                  Rs {{ product.get_lowest_price }} - {{ product.get_highest_price }}
+                </div>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% comment %} Quantity for products {% endcomment %}
+      {% if not product.get_out_of_stock %}
+        <div class="form__section form__section--quantity">
+          <div class="product__options--quantity product__options--input">
+            <div class="product__options--title">Quantity</div>
+            <div class="product__options--buttons">
+              <button class="btn btn-secondary btn-quantity disable" id="minus-button" type="button" data-attributevalue="minus">
+                -
+              </button>
+              <div class="product__options--quantity-input">
+                
+                <input type="number" name="quantity" value="1" min="1" max="15" id="quantity"  aria-label="enter number"></input>
+              </div>
+              <button class="btn btn-secondary btn-quantity disable" id="plus-button" type="button" data-attributevalue="plus">
+                +
+              </button>
+            </div>
+          </div>
+          {% comment %} Stock limit messages {% endcomment %}
+          <div class="quantity__warning hidden" id="quantity-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div class="quantity__warning--message" id="quantity-warning-message"></div>
+          </div>
+        </div>
+      {% endif %}
+      {% comment %} Add to bag button {% endcomment %}
+      <div class="form__section">
+        {% if request.user.is_authenticated %}
+          <button class="btn disabled product__options--input add__to--bag" id="add-to-bag-button" type="submit" data-attributevalue="add-to-bag">
+            Add to bag
+          </button>
+        {% else %}
+          <button class="btn product__options--input add__to--bag" id="ask-user-to-log-in">
+            Add to bag
+            </button>
+            <u>
+            <i class="fas fa-exclamation-triangle hidden" style="color: red;"></i>
+            <h class="quantity__warning--message hidden" id="ask-user-to-log-ins" style="color: red;">
+            Add to bag
+            </h>
+            </u>
+        {% endif %}
+      </div>
+      
+    </form>
+    <div class="btn product__options--input add__to--bag" style="background-color: #00E785;">
+            Chat On Whatsapp
+         
+        <a href="https://api.whatsapp.com/send?phone=923475101502" title="Chat with us on WhatsApp"  style="margin: 0 0 20px 0 !important;
+height: 52px; min-width: 52px; padding: 10px 0px 0px 10px; position: variable !important; bottom: 10px; right: 20px; z-index: 999999999 !important; background-color: #00E785;" >
+  <svg width="42" height="42" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_1024_354)"><path d="M23.8759 4.06939C21.4959 1.68839 18.3316 0.253548 14.9723 0.0320463C11.613 -0.189455 8.28774 0.817483 5.61565 2.86535C2.94357 4.91323 1.10682 7.86244 0.447451 11.1638C-0.21192 14.4652 0.351026 17.8937 2.03146 20.8109L0.0625 28.0004L7.42006 26.0712C9.45505 27.1794 11.7353 27.7601 14.0524 27.7602H14.0583C16.8029 27.7599 19.4859 26.946 21.768 25.4212C24.0502 23.8965 25.829 21.7294 26.8798 19.1939C27.9305 16.6583 28.206 13.8682 27.6713 11.1761C27.1367 8.48406 25.8159 6.01095 23.8759 4.06939ZM14.0583 25.4169H14.0538C11.988 25.417 9.96008 24.8617 8.1825 23.8091L7.7611 23.5593L3.3945 24.704L4.56014 20.448L4.28546 20.0117C2.92594 17.8454 2.32491 15.2886 2.57684 12.7434C2.82877 10.1982 3.91938 7.80894 5.67722 5.95113C7.43506 4.09332 9.76045 2.87235 12.2878 2.48017C14.8152 2.08799 17.4013 2.54684 19.6395 3.78457C21.8776 5.02231 23.641 6.96875 24.6524 9.3179C25.6638 11.6671 25.8659 14.2857 25.2268 16.7622C24.5877 19.2387 23.1438 21.4326 21.122 22.999C19.1001 24.5655 16.6151 25.4156 14.0575 25.4157L14.0583 25.4169Z" fill="#E0E0E0"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M10.6291 7.98363C10.3723 7.41271 10.1019 7.40123 9.85771 7.39143C9.65779 7.38275 9.42903 7.38331 9.20083 7.38331C9.0271 7.3879 8.8562 7.42837 8.69887 7.5022C8.54154 7.57602 8.40119 7.68159 8.28663 7.81227C7.899 8.17929 7.59209 8.62305 7.38547 9.11526C7.17884 9.60747 7.07704 10.1373 7.08655 10.6711C7.08655 12.3578 8.31519 13.9877 8.48655 14.2164C8.65791 14.4452 10.8581 18.0169 14.3425 19.3908C17.2382 20.5327 17.8276 20.3056 18.4562 20.2485C19.0848 20.1913 20.4843 19.4194 20.7701 18.6189C21.056 17.8183 21.0557 17.1323 20.9701 16.989C20.8844 16.8456 20.6559 16.7605 20.3129 16.5889C19.9699 16.4172 18.2849 15.5879 17.9704 15.4736C17.656 15.3594 17.4275 15.3023 17.199 15.6455C16.9705 15.9888 16.3139 16.7602 16.1137 16.9895C15.9135 17.2189 15.7136 17.2471 15.3709 17.0758C14.3603 16.6729 13.4275 16.0972 12.6143 15.3745C11.8648 14.6818 11.2221 13.8819 10.7072 13.0007C10.5073 12.6579 10.6857 12.472 10.8579 12.3007C11.0119 12.1472 11.2006 11.9005 11.3722 11.7003C11.5129 11.5271 11.6282 11.3346 11.7147 11.1289C11.7603 11.0343 11.7817 10.9299 11.7768 10.825C11.7719 10.7201 11.7409 10.6182 11.6867 10.5283C11.6001 10.3566 10.9337 8.66151 10.6291 7.98363Z" fill="white"></path><path d="M23.7628 4.02445C21.4107 1.66917 18.2825 0.249336 14.9611 0.0294866C11.6397 -0.190363 8.35161 0.804769 5.70953 2.82947C3.06745 4.85417 1.25154 7.77034 0.600156 11.0346C-0.051233 14.299 0.506321 17.6888 2.16894 20.5724L0.222656 27.6808L7.49566 25.7737C9.50727 26.8692 11.7613 27.4432 14.0519 27.4434H14.0577C16.7711 27.4436 19.4235 26.6392 21.6798 25.1321C23.936 23.6249 25.6947 21.4825 26.7335 18.9759C27.7722 16.4693 28.0444 13.711 27.5157 11.0497C26.9869 8.38835 25.6809 5.94358 23.7628 4.02445ZM14.0577 25.1269H14.0547C12.0125 25.1271 10.0078 24.5782 8.25054 23.5377L7.8339 23.2907L3.51686 24.4222L4.66906 20.2143L4.39774 19.7831C3.05387 17.6415 2.4598 15.1141 2.70892 12.598C2.95804 10.082 4.03622 7.72013 5.77398 5.88366C7.51173 4.04719 9.81051 2.84028 12.3089 2.45266C14.8074 2.06505 17.3638 2.5187 19.5763 3.74232C21.7888 4.96593 23.5319 6.89011 24.5317 9.21238C25.5314 11.5346 25.7311 14.1233 25.0993 16.5714C24.4675 19.0195 23.0401 21.1883 21.0414 22.7367C19.0427 24.2851 16.5861 25.1254 14.0577 25.1255V25.1269Z" fill="white"></path></g><defs><clipPath id="clip0_1024_354"><rect width="27.8748" height="28" fill="white" transform="translate(0.0625)"></rect></clipPath></defs></svg>
+</a> </div>
+
+  </div>
+  {% comment %} Modal {% endcomment %}
+  <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content modal__content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Please fill out the form below!</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body modal__body">
+          {% for k,v in attribute_values_dict.items %}
+            <div class="options__request form__section">
+              <p data-attribute="{{ k }}" class="product__options--title">{{ k }}</p>
+              <div class="product__options--request--input">
+                <div class="btn-group in_modal" role="group" aria-label="Basic radio toggle button group" data-group-name="{{ k }}">
+                  {% for item in v %}
+                    {% if item in values_set %}
+                      <input type="radio" class="btn-check option in_modal" name="request-{{ k }}" id="request-{{ k }}-{{ forloop.counter }}" value="{{ item }}">
+                      <label class="btn btn-outline-primary" for="request-{{ k }}-{{ forloop.counter }}" data-labelid="{{ item }}">{{ item }}</label>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+          {% comment %} Quatnity field {% endcomment %}
+          <div class="form__section form__section--quantity modal__quantity">
+            <div class="product__options--title">Quantity:</div>
+            <div class="product__options--quantity-input">
+              <label for="quantity-in-modal"></label>
+              <input type="number" name="required-quantity" value="1" min="1" max="150" id="quantity-in-modal" aria-label="enter number">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn__cancel" data-bs-dismiss="modal">
+            {% comment %} Add icon cancel arrow {% endcomment %}
+            <i class="fas fa-arrow-left"></i>
+            Cancel
+          </button>
+          <button type="button" class="btn btn__add confirm__email--require btn_ok_in_modal" data-id="">
+            <i class="fas fa-check"></i>
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% comment %} product Items Block{% endcomment %}
+                                       <hr></hr>
+                                          <div class="container">
+                                            <div class="row">
+                                              <div class="col-md-12 text-center">
+                                                <span class="product__card--name">RELATED PRODUCTS</span>
+                                                <p></p>
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                     <div class="products__all">
+                                          {% for product in related_products %}
+                                            {% if product.is_active %}
+                                              <div class="wishlist__item" data-attr="{{ product.id }}">
+                                                {% comment %} product card {% endcomment %}
+                                                <a class="product__card" href="{% url 'product_detail' pk=product.pk %}" aria-label="Go to {{ product.name }}">
+                                                  {% comment %} Sale label {% endcomment %}
+                                                  {% if product.get_sale_price_is_lower_than_store_price %}
+                                                    <div class="product__card--discount">
+                                                      <img src="{% static 'images/sale.png' %}" alt="sale Image">
+                                                    </div>
+                                                  {% endif %}
+                                                  {% comment %} New label {% endcomment %}
+                                                  {% if product.get_recently_created %}
+                                                    <!--<div class="product__card--new">
+                                                      New !
+                                                    </div>-->
+                                                  {% endif %}
+                                                  {% comment %} product image {% endcomment %}
+                                                  <div class="product__card--image">
+                                                    {% if product.images.all %}
+                                                      <img src="{{ product.get_main_image }}" alt="Cover image for {{ product.name }}">
+                                                    {% else %}
+                                                      <img src="{% static 'images/default_product_image.png' %}" alt="default product Image">
+                                                    {% endif %}
+                                                  </div>
+                                                  {% comment %} product name {% endcomment %}
+                                                  <div class="product__card--name" style="text-align:left;">{{ product.name }}</div>
+                                                  {% comment %} product price {% endcomment %}
+                                                  <div class="product__card--content">
+                                                    <div class="product__card--name">
+                                                      {% if product.get_out_of_stock %}
+                                                        <div class="product__card--price price__sale" style="text-align:left;">
+                                                          <p>Out of stock</p>
+                                                        </div>
+                                                      {% elif product.get_same_sale_price %}
+                                                        {% if product.get_sale_price_is_lower_than_store_price %}
+                    
+                                                          <div class="product__card--price price__regular" style="text-align:left;">
+                                                            Rs {{ product.get_lowest_store_price }}
+                                                          </div>
+                                                          <div class="product__card--price price__sale" style="text-align:left;">
+                                                            Rs {{ product.get_lowest_price }}
+                                                          </div>
+                                                        {% else %}
+                                                          <div class="product__card--price" style="text-align:left;">
+                                                            Rs {{ product.get_lowest_price }}
+                                                          </div>
+                                                        {% endif %}
+                                                      {% else %}
+                                                        {% if product.get_sale_price_is_lower_than_store_price %}
+
+                                                          <div class="product__card--price price__regular" style="text-align:left;">
+                                                            Rs {{ product.get_lowest_store_price }} - {{ product.get_highest_store_price }}
+                                                          </div>
+                                                          <div class="product__card--price price__sale" style="text-align:left;">
+                                                            Rs {{ product.get_lowest_price }} - {{ product.get_highest_price }}
+                                                          </div>
+                                                        {% else %}
+
+                                                          <div class="product__card--price" style="text-align:left;">
+                                                            Rs {{ product.get_lowest_price }} - {{ product.get_highest_price }}
+                                                          </div>
+                                                        {% endif %}
+                                                      {% endif %}
+                                                    </div>
+                                                  </div>
+                                                </a>
+                                              </div>
+                                            {% endif %}
+                                          {% endfor %}
+                                     </div>
+                                  {% comment %} Control Pagination {% endcomment %}
+                                    {% if products.paginator.num_pages %}
+                                      {% if not products.paginator.num_pages == 1 %}
+                                        <div class="pagination">
+                                          <div class="pagination__navigation">
+                                            {% if products.has_previous and not products.has_next %}
+                                              <a href="?page={{ products.previous_page_number }}" class="pagination__navigation--btn"
+                                                aria-label="Go to previous page results">
+                                                <i class="fas fa-chevron-left"></i>
+                                              </a>
+                                              <div class="pagination__navigation--fake">
+                                                <i class="fas fa-chevron-right"></i>
+                                              </div>
+                                            {% elif products.has_next and not products.has_previous %}
+                                              <div class="pagination__navigation--fake">
+                                                <i class="fas fa-chevron-left"></i>
+                                              </div>
+                                              <a href="?page={{ products.next_page_number }}" class="pagination__navigation--btn"
+                                                aria-label="Go to next page results">
+                                                <i class="fas fa-chevron-right"></i>
+                                              </a>
+                                            {% elif products.has_next and products.has_previous %}
+                                              <a href="?page={{ products.previous_page_number }}" class="pagination__navigation--btn"
+                                                aria-label="Go to previous page results">
+                                                <i class="fas fa-chevron-left"></i>
+                                              </a>
+                                              <a href="?page={{ products.next_page_number }}" class="pagination__navigation--btn"
+                                                aria-label="Go to next page results">
+                                                <i class="fas fa-chevron-right"></i>
+                                              </a>
+                                            {% else %}
+                                              <div class="pagination__navigation--fake">
+                                                <i class="fas fa-chevron-left"></i>
+                                              </div>
+                                              <div class="pagination__navigation--fake">
+                                                <i class="fas fa-chevron-right"></i>
+                                              </div>
+                                            {% endif %}
+                                          </div>
+                                          <div class="pagination__location">
+                                            Page <span>{{ products.number }}</span> of {{ products.paginator.num_pages }}
+                                          </div>
+                                        </div>
+                                      {% endif %}
+                                    {% endif %}
+                         {% comment %} End product Items Block{% endcomment %}
+
+{% endblock %}
+
+                                       
+
+
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function() {
+      // code to compare two objects
+      function compareObjects(obj1, obj2) {
+        var result = true;
+        for (var key in obj1) {
+          if (obj1.hasOwnProperty(key)) {
+            if (obj1[key] !== obj2[key]) {
+              result = false;
+            }
+          }
+        }
+        return result;
+      }
+      // reusable function for alert message
+      const messagesAlertData = function(data) {
+        if (data) {
+          if ($('#messages-notes').length) {
+            $('#messages-notes').remove();
+          }
+          $('.fa-spinner').remove();
+          $('.product__main').before('<div class="message-container" id="messages-notes">' +
+            '<div class="message-container__message">' +
+              '<p class="message-container__message--text">' + data + '</p>' +
+              '</div>' +
+            '</div>');
+        }
+        setTimeout(() => {
+          $('#messages-notes').remove();
+        }, 3000);
+      };
+      const messagesAlertError = function() {
+        if ($('#messages-notes').length) {
+          $('#messages-notes').remove();
+        }
+        $('.fa-spinner').remove();
+        $('.product__main').before('<div class="message-container" id="messages-notes">' +
+        '<div class="message-container__message">' +
+        '<p class="message-container__message--text">Something went wrong</p>' +
+        '</div>' +
+        '</div>');
+        setTimeout(() => {
+          $('#messages-notes').remove();
+        } , 3000);
+      };
+      const messageRequestItem = function() {
+        if ($('#messages-stock').length) {
+          $('#messages-stock').remove();
+        }
+        $('#add-to-bag-button').after('<div class="request__stock--email" id="messages-stock">' +
+          '<div class="message-container__message">' +
+            '<p>Order notification about stock updates</p>' +
+              '<div class="message-container__buttons">' +
+                '<button class="btn btn__add" id="yes-button" data-bs-toggle="modal" data-bs-target="#exampleModal">Yes</button>' +
+                '<button class="btn btn__cancel btn__no" id="no-button">No</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>');
+        $('.btn__no').click(function() {
+          $('#messages-stock').remove();
+        });
+      };
+      let product_inventory_id = null;
+      let itemQuantity = 1;
+      let quantityFinal = 0;
+      let is_match = false;
+      let product_id = $('#product').data('id');
+      let options = $('.option');
+      let values_list = JSON.stringify({{ values_list|safe }});
+      // convert to array
+      let values_list_array = JSON.parse(values_list);
+      let valuesSetActive = eval("{{ values_set_active_list|safe }}");
+      const checkReadyToPurchase = (values_list, chosen_attributes) => {
+        for (let stockOption of values_list) {
+          let stockOptionCopy = {};
+          for (let key in stockOption) {
+            stockOptionCopy[key] = stockOption[key];
+          }
+          // remove the quantity from the copy
+          delete stockOptionCopy["Quantity"];
+          delete stockOptionCopy["Price"];
+          delete stockOptionCopy["id"];
+          if (compareObjects(stockOptionCopy, chosen_attributes)) {
+            product_inventory_id = stockOption["id"];
+            // enable '#add-to-bag-button'
+            $('#add-to-bag-button').removeClass('disabled');
+            let quantityCheck = $('input[name="quantity"]').val();
+            id = stockOption["id"];
+            //check type of id
+            quantityFinal = $('input[name="quantity"]').val();
+            //convert to int
+            quantityFinal = parseInt(quantityFinal);
+            // STOCK WARNING MESSAGE
+            //get max value in the input with the name quantity
+            let quantityMax = $('input[name="quantity"]').attr('max');
+            if ((quantityMax <= 10) && (quantityMax != 0)) {
+              $('#quantity-warning').removeClass('hidden');
+              $('#quantity-warning-message').text('Only ' + quantityMax + ' items available');
+            } else {
+              $('#quantity-warning').addClass('hidden');
+            }
+          }
+        }
+      };         
+      const findPriceAndQuantity = (values_list, chosen_attributes) => {
+        //[{"size-shoes":"36","Color":"red","Quantity":10,"Price":"102.00"},{"size-shoes":"35","Color":"yellow","Quantity":10,"Price":"101.00"},{"Color":"yellow","size-shoes":"38","Quantity":10,"Price":"102.00"}]
+        let price = 0;
+        let quantity = 0;
+        for (let stockOption of values_list) {
+          let stockOptionCopy = {};
+          for (let key in stockOption) {
+            stockOptionCopy[key] = stockOption[key];
+          }
+          // remove the quantity from the copy
+          delete stockOptionCopy["Quantity"];
+          delete stockOptionCopy["Price"];
+          delete stockOptionCopy["id"];
+          if (compareObjects(stockOptionCopy, chosen_attributes)) {
+            price = stockOption["Price"];
+            quantity = stockOption["Quantity"];
+          } 
+        }
+        if (price !== 0) {
+          $('.product__price').text('\$ '+ price);
+          $('.product__price').addClass('price__sale');
+          $('.product__price').addClass('product__card--price');
+          
+        }
+        $('input[name="quantity"]').attr('max', quantity);
+        itemQuantity = quantity;
+        $('#minus-button').removeClass('disabled');
+        $('#plus-button').removeClass('disabled');
+      };
+      // Reset options:
+      const reset = function(e) {
+        // prevent default
+        e.preventDefault();
+        $('#add-to-bag-button').addClass('disabled');
+        // reset all values
+        $('input[name="quantity"]').val(1);
+        $('#minus-button').removeClass('disabled');
+        $('#plus-button').removeClass('disabled');
+        $('.btn-check').removeClass('active');
+        $('#quantity-warning').addClass('hidden');
+        if($('#messages-stock')) {
+          $('#messages-stock').remove();
+        }
+        // check if product value is valuesSetActive
+        $('.btn-check').each(function() {
+          let value = $(this).val();
+          // disable if value is not in valuesSetActive
+          if (!valuesSetActive.includes(value)) {
+            let label = $('label[for="' + value + '"]');
+            $(label).addClass('disable');
+            label.css('opacity', '0.5');
+            let label_value = label.text();
+            $(label).addClass('disabled');
+            $(label).addClass('btn-outline-primary');
+            $(this).attr('disabled', true);
+          }
+          $('#item-price').html(`
+            <div class="">
+              {% if product.get_out_of_stock %}
+                <div class="product__card--price price__sale">
+                  <p>Out of stock</p>
+                </div>
+              {% elif product.get_same_sale_price %}
+                {% if product.get_sale_price_is_lower_than_store_price %}
+                  <div class="product__card--price price__regular">
+                    $ {{ product.get_lowest_store_price }}
+                  </div>
+                  <div class="product__card--price price__sale">
+                    {{ product.get_lowest_price }}
+                  </div>
+                {% else %}
+                  <div class="product__card--price">
+                    $ {{ product.get_lowest_price }}
+                  </div>
+                {% endif %}
+              {% else %}
+                {% if product.get_sale_price_is_lower_than_store_price %}
+                  <div class="product__card--price price__regular">
+                    $ {{ product.get_lowest_store_price }} - {{ product.get_highest_store_price }}
+                  </div>
+                  <div class="product__card--price price__sale">
+                    $ {{ product.get_lowest_price }} - {{ product.get_highest_price }}
+                  </div>
+                {% else %}
+                  <div class="product__card--price">
+                    $ {{ product.get_lowest_price }} - {{ product.get_highest_price }}
+                  </div>
+                {% endif %}
+              {% endif %}
+            </div>
+          `);
+        });
+      };
+      // Call reset on click
+      $('#reset-button').click(reset);
+      // IF PRODUCT HAS ATTRIBUTES AND VALUES
+      if (valuesSetActive.length > 0) {
+        if ($('.item__not__available').length) {
+          messageRequestItem();
+        }
+        let availableAll;
+        // get all inputs with the name 'Color'
+        let inputs = $(' input[name="Color"]');
+        // loop through all inputs
+        inputs.each(function() {
+          // get the value of the input
+          let value = $(this).val();
+          let thisLabel = $(this).next('label');
+          //get label with disabled class
+          thisLabel.css('background-color', value);
+          thisLabel.text('');
+          if ($(thisLabel).hasClass('disabled') == true) {
+            thisLabel.css('opacity', '0.5');
+            availableAll = false;
+            if (availableAll == false) {
+              messageRequestItem();
+            }
+          } else {
+            let label = $('label[for="' + value + '"]');
+          }
+        });
+        // [
+        //   {"size-shoes":"36","Color":"red","Quantity":10},
+        //   {"size-shoes":"35","Color":"yellow","Quantity":10},
+        //   {"Color":"yellow","size-shoes":"38","Quantity":10}
+        //]
+        // if color is checked, we need to update the size-shoes group to check what sizes are available for that color
+        // if size-shoes is checked, we need to update the color group to check what colors are available for that size
+        $('.product__options').on('change', 'input', function() {
+          let attribute_value = $(this).val();
+          let attribute_name = $(this).get(0).name;
+          let availableAttrsFromOtherGroups = [];
+          for (let stockOption of values_list_array) {
+            if (stockOption[attribute_name] == attribute_value && stockOption["Quantity"] > 0) {
+              for(let key in stockOption) {
+                if (key != "Quantity" && key != attribute_name) {
+                  //if (key == "id") {
+                  //  product_inventory_id = stockOption[key];
+                  //}
+                  availableAttrsFromOtherGroups.push(stockOption[key]);
+                }
+              }
+            }
+          }
+          // now go through other groups and disable/enable buttons
+          for (let group of $('.product__options--input .btn-group')) {
+            let groupName = $(group).data('group-name');
+            if (groupName != attribute_name) {
+              for (let button of $(group).children('input')) {
+                let buttonValue = $(button).val();
+                let buttonValueString = buttonValue.toString();
+                if (availableAttrsFromOtherGroups.includes(buttonValueString)) {
+                  // find the buttons label and enable it
+                  let buttonId = $(button).attr('value');
+                  //find the label with data-labelid the same as the buttonId
+                  let buttonLabel = $('label[data-labelid="' + buttonId + '"]');
+                  $(buttonLabel).removeClass('disabled');
+                } else {
+                  // find the buttons label and disable it
+                  let buttonId = $(button).attr('value');
+                  let buttonLabel = $('label[data-labelid="' + buttonId + '"]');
+                  //let buttonLabel = $('label[for="' + buttonId + '"]');
+                  $(buttonLabel).addClass('disabled');
+                  // SHOW SUGGESTIONS MESSAGE "BE NOTIFIED WHEN THIS PRODUCT IS BACK IN STOCK"
+                  availableAll = false;
+                  if (availableAll == false && $('#messages-stock').length == 0) {
+                    messageRequestItem();
+                  }
+                }
+              }
+            }
+          }
+          let chosenAttributes = {};
+          for (let group of $('.product__options--input .btn-group')) {
+            let groupName = $(group).data('group-name');
+            let groupValue = $(group).children(':checked').val();
+            chosenAttributes[groupName] = groupValue;
+          }
+          findPriceAndQuantity(values_list_array, chosenAttributes);
+          checkReadyToPurchase(values_list_array, chosenAttributes);
+          // on click outside of the groups, we need to enable all the buttons that are disabled
+          $(document).on('click', function(e){
+            // if click outside of the group, enable all the buttons
+            if (!$(e.target).closest('.product__options--input').length) {
+              // if click is outside of the form
+              //if (!$(e.target).closest('form').length) {
+              $('label.disabled').removeClass('disabled');
+              $('input.btn-check').prop('checked', false);
+              $('#item-price').html(`
+                <div class="">
+                  {% if product.get_out_of_stock %}
+                    <div class="product__card--price price__sale">
+                      <p>Out of stock</p>
+                    </div>
+                  {% elif product.get_same_sale_price %}
+                    {% if product.get_sale_price_is_lower_than_store_price %}
+                      <div class="product__card--price price__regular">
+                        $ {{ product.get_lowest_store_price }}
+                      </div>
+                      <div class="product__card--price price__sale">
+                        {{ product.get_lowest_price }}
+                      </div>
+                    {% else %}
+                      <div class="product__card--price">
+                        $ {{ product.get_lowest_price }}
+                      </div>
+                    {% endif %}
+                  {% else %}
+                    {% if product.get_sale_price_is_lower_than_store_price %}
+                      <div class="product__card--price price__regular">
+                        $ {{ product.get_lowest_store_price }} - {{ product.get_highest_store_price }}
+                      </div>
+                      <div class="product__card--price price__sale">
+                        $ {{ product.get_lowest_price }} - {{ product.get_highest_price }}
+                      </div>
+                    {% else %}
+                      <div class="product__card--price">
+                        $ {{ product.get_lowest_price }} - {{ product.get_highest_price }}
+                      </div>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              `);
+              $('#add-to-bag-button').addClass('disabled');
+              $('#quantity-warning').addClass('hidden');
+              if($('#messages-stock')) {
+                $('#messages-stock').remove();
+              }
+              $(document).off('click');
+            }
+          });
+        });
+        
+        // Control the quantity of the item
+        $('#minus-button').on('click', function(e) {
+          e.preventDefault();
+          let quantityCheck = $('input[name="quantity"]').val();
+          if (quantityCheck > 1) {
+            $('input[name="quantity"]').val(parseInt(quantityCheck) - 1);
+            $('#minus-button').removeClass('disabled');
+            $('#plus-button').removeClass('disabled');
+          } else {
+            $('#minus-button').addClass('disabled');
+          }
+        });
+        // Control the plus button
+        $('#plus-button').on('click', function(e) {
+          e.preventDefault();
+          // check if input with name="quantity" max is not reached
+          let quantityCheck = $('input[name="quantity"]').val();
+          if (quantityCheck < itemQuantity) {
+            $('#plus-button').removeClass('disabled');
+            $('input[name="quantity"]').val(parseInt(quantityCheck) + 1);
+          } else {
+            // CHECK THAT INPUT GROUPS WERE ALL CHECKED
+            if ($('input:checked').length == $('.product__options--input .btn-group').length) {
+              $('#plus-button').addClass('disabled');
+              // STOCK WARNING MESSAGE
+              $('#quantity-warning').removeClass('hidden');
+              $('#quantity-warning-message').text('Only ' + itemQuantity + ' items available');
+              //check of all selected
+              } else {
+                $('#add-to-cart').addClass('disabled');
+              }
+          }
+        });
+        
+      } else if (valuesSetActive.length == 0 && values_list_array.length == 1) {
+        let idForSingle;
+        //item__not__available
+        for (let stockOption of values_list_array) {
+          for (let key in stockOption) {
+            if (key == "Quantity") {
+              //let quantityForSingle = stockOption[key];
+              itemQuantity = stockOption[key];
+              $('input[name="quantity"]').attr('max', itemQuantity);
+            } else if (key == "id") {
+              idForSingle = stockOption[key];
+              product_inventory_id = idForSingle;
+            }
+          }
+        } 
+        // Control the quantity of the item
+        $('#minus-button').on('click', function(e) {
+          e.preventDefault();
+          let quantityCheck = $('input[name="quantity"]').val();
+          if (quantityCheck > 1) {
+            $('input[name="quantity"]').val(parseInt(quantityCheck) - 1);
+            $('#minus-button').removeClass('disabled');
+            $('#plus-button').removeClass('disabled');
+          } else {
+            $('#minus-button').addClass('disabled');
+          }
+        });
+        // Control the plus button
+        $('#plus-button').on('click', function(e) {
+          e.preventDefault();
+          // check if input with name="quantity" max is not reached
+          let quantityCheck = $('input[name="quantity"]').val();
+          if (quantityCheck < itemQuantity) {
+            $('#plus-button').removeClass('disabled');
+            $('#minus-button').removeClass('disabled');
+            $('input[name="quantity"]').val(parseInt(quantityCheck) + 1);
+          } else {
+            $('#plus-button').addClass('disabled');
+            // STOCK WARNING MESSAGE
+            $('#quantity-warning').removeClass('hidden');
+            $('#quantity-warning-message').text('Only ' + itemQuantity + ' items available');
+          }
+        });
+        quantityFinal = $('input[name="quantity"]').val();
+        quantityFinal = parseInt(quantityFinal);
+        $('#add-to-bag-button').removeClass('disabled');
+        is_match = true;
+      } else {
+        if ($('.out_of_stock')) {
+          $('#add-to-bag-button').addClass('disabled');
+          $('.product__options--title').remove();
+          availableAll = false;
+          if (availableAll == false) {
+            // REMOVE FROM HERE NOW
+            messageRequestItem();
+          }
+        }
+      }
+      $('#add-to-bag-button').on('click', function(e) {
+        e.preventDefault();
+        quantityFinal = $('input[name="quantity"]').val();
+        $(this).parent().append('<i class="fas fa-spinner fa-spin"></i>');
+        $('label.disabled').removeClass('disabled');
+        $('input.btn-check').prop('checked', false);
+        reset(e);
+        // AJAX request to add item to the bag
+        $.ajax({
+          url: "{% url 'add_to_bag' %}",
+          type: "POST",
+          data: {
+            'product_inventory_id': product_inventory_id,
+            'quantity': quantityFinal,
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+          },
+          success: function(data) {
+            // update shopping bag in navbar
+            $('#shopping-bag-count').text(data.product_count);
+            // disable button after the click
+            $('#add-to-bag-button').addClass('disabled');
+            messagesAlertData(data.message_alert);
+          },
+          error: function(data) {
+            messagesAlertError();
+          }
+        });
+      });
+      // add-to/remove-from wishlist
+      $('#wishlist-control').on('click', function(e) {
+        // add spinner
+        $(this).append('<i class="fas fa-spinner fa-spin"></i>');
+        if ($('#messages-notes').length !== 0) {
+          $('#messages-notes').remove();
+        }
+        e.preventDefault();
+        $(this).prev().append('<i class="fas fa-spinner fa-spin"></i>');
+        // AJAX request to add item to the wishlist
+        $.ajax({
+          url: "{% url 'add_remove_product_wishlist_ajax' %}",
+          type: "POST",
+          data: {
+            'product_id': product_id,
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+          },
+          success: function(data) {
+            if (data.product_in_wishlist) {
+              //replace the with <i class="fas fa-heart"></i>
+              $('#wishlist-control').html('<i class="fas fa-heart"></i>');
+              // change text in $('.rating__title'.)
+              $('.rating__title').text('Remove from wishlist');
+            } else {
+              //replace the with <i class="far fa-heart"></i>
+              $('#wishlist-control').html('<i class="far fa-heart"></i>');
+              // change text in $('.rating__title'.)
+              $('.rating__title').text('Add to wishlist');
+            }
+            messagesAlertData(data.message_alert);
+          },
+          error: function(data) {
+            messagesAlertError();
+          }
+        });
+      });
+      // if modal is opened, $('#messages-notes').remove();
+      $('#exampleModal').on('show.bs.modal', function(e) {
+        //$('#messages-notes').remove();
+        //$('.btn_ok_in_modal').addClass('disabled');
+        // check if it has any options__request
+        if ($('.options__request').length) {
+          // check if user checked 1 in each btn-group
+          // add event listener to each btn-group
+          let inputs = $(' input[name="request-Color"]');
+          // loop through all inputs
+          inputs.each(function() {
+            // get the value of the input
+            let valueModal = $(this).val();
+            let thisLabel = $('label[data-labelid="' + valueModal + '"]');
+            //get label with disabled class
+            thisLabel.css('background-color', valueModal);
+            thisLabel.text('');
+          });
+          if ($('.btn-check:checked').length == $('.btn-group .in_modal').length) {
+            // if yes, add the button
+            //enable send button in modal
+          }
+        }
+      });
+      $('.btn_ok_in_modal').on('click', function(e) {
+        e.preventDefault();
+        let productRequestOptions = {
+          id: product_id,
+          options: {},
+          quantity: 0,
+          notes: ''
+        };
+        $('.btn-group.in_modal').each(function() {
+          let group_name = $(this).attr('data-group-name');
+          let group_value = $(this).find('input:checked').val();
+          productRequestOptions.options[group_name] = group_value;
+        });
+        let optionAmount = $('.options__request').length;
+        let optionChecked = $('.modal .btn-check:checked').length;
+        let quantity = $('.modal-body input[name="required-quantity"]').val();
+        productRequestOptions['quantity'] = quantity;
+        let data = JSON.stringify(productRequestOptions);
+        //AJAX request to add item to the StockEmailNotification table
+        if (optionAmount === optionChecked) {
+          // close the modal
+          $('#exampleModal').modal('hide');
+          $.ajax({
+            url: "{% url 'add_to_stock_email_notification' %}",
+            type: "POST",
+            data: {
+              'data': data,
+              'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(data) {
+              if (data.alert_message) {
+                messagesAlertData(data.alert_message);
+              }
+            },
+            error: function(data) {
+              if (data.alert_message) {
+                messagesAlertData(data.alert_message);
+              } else {
+                messagesAlertError();
+              }
+            }
+          });
+        } else {
+          // change inner text in .modal-title
+          $('.modal-title').text('Please select all options');
+          $('.modal-title').effect('highlight', {color: '#ff0000'}, 1000);
+        }
+      });
+      // If user is LOGGED OUT:
+      // check if #ask-user-to-log-in is present
+      if ($('#ask-user-to-log-in').length) {
+        //add click event listener to the button
+        $('#ask-user-to-log-in').on('click', function(e) {
+          e.preventDefault();
+          // remove message block
+          $('#messages-notes').remove();
+          $('.fas').removeClass('hidden');
+          $('.quantity__warning--message').removeClass('hidden');
+          document.getElementById("ask-user-to-log-ins").innerHTML = "Please login to continue!";
+          // add the message block with login or register link
+          //$('.product__main--info').before('<div class="message-container" id="messages-notes">' +
+          //  '<div class="message-container__message">' +
+          //    '<p>Please login to continue!</p>' +
+          //  '</div>' +
+          //'</div>');
+          // add 3 blinks for the .enter
+          $('.enter').effect('highlight', {
+            color: '#ff0000'
+          }, 3000);
+          // remove the message block after 3 seconds
+          setTimeout(() => {
+          $('.fas').addClass('hidden');
+          $('.quantity__warning--message').addClass('hidden');
+            $('#messages-notes').remove();
+          }, 3000);
+        });
+      }
+    });
+  </script>
+{% endblock %}

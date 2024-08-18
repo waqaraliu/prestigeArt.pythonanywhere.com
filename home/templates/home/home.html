@@ -1,0 +1,468 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load changeStatement %}
+{% block content %}
+  <section class="home__main" style="background-color: black;">
+    <div class="main__content">
+      <div class="parallelogram">
+        <h1 class="main__logo--text">
+          <span>Prestige Art</span>
+        </h1>
+      </div>
+      <div class="main__content--subtitle" style="color: #dbb;">Online Art Store</div>
+      <p style="color: #cbb;">
+        The best place to buy your favorite Art
+        for your daily needs.
+        You will find everything in our collection.
+        from daily use Canvas to preserved ART.
+      </p>
+      <p class="last" style="color: #cbb;">
+        We have regular discounts for our customers and additional perks for loyal customers.
+        Don't hesitate to register!
+        It will make your life easier at once!
+      </p>
+      {% if request.user.is_authenticated %}
+        <!--<a href="{% url 'products_list' %}" class=" btn__getstarted">Start Shopping</a>-->
+      {% else %}
+        <a href="{% url 'account_signup' %}" class=" btn__getstarted">Get Started</a>
+      {% endif %}
+    </div>
+    <div class="main__image">
+      <img src="{% static 'images/horse.png' %}" alt="store">
+    </div>
+  </section>
+
+
+               
+                      {% comment %} product Items Block{% endcomment %}
+                                       <hr></hr>
+                                          <div class="container">
+                                            <div class="row">
+                                              <div class="col-md-12 text-center">
+                                                <span class="product__card--name" style="color: #cfb;">TRENDING</span>
+                                                <p></p>
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                     <div class="products__all">
+                                          {% for product in products %}
+                                            {% if product.is_active %}
+                                              <div class="wishlist__item" data-attr="{{ product.id }}">
+                                                {% comment %} product card {% endcomment %}
+                                                <a class="product__card" href="{% url 'product_detail' pk=product.pk %}" aria-label="Go to {{ product.name }}">
+                                                  {% comment %} Sale label {% endcomment %}
+                                                  {% if product.get_sale_price_is_lower_than_store_price %}
+                                                    <div class="product__card--discount">
+                                                      <img src="{% static 'images/sale.png' %}" alt="sale Image">
+                                                    </div>
+                                                  {% endif %}
+                                                  {% comment %} New label {% endcomment %}
+                                                  {% if product.get_recently_created %}
+                                                    <!--<div class="product__card--new">
+                                                      New !
+                                                    </div>-->
+                                                  {% endif %}
+                                                  {% comment %} product image {% endcomment %}
+                                                  <div class="product__card--image">
+                                                    {% if product.images.all %}
+                                                      <img src="{{ product.get_main_image }}" alt="Cover image for {{ product.name }}">
+                                                    {% else %}
+                                                      <img src="{% static 'images/default_product_image.png' %}" alt="default product Image">
+                                                    {% endif %}
+                                                  </div>
+                                                  {% comment %} product name {% endcomment %}
+                                                  <div class="product__card--name" style="text-align:left;">{{ product.name }}</div>
+                                                  {% comment %} product price {% endcomment %}
+                                                  <div class="product__card--content">
+                                                    <div class="product__card--name">
+                                                      {% if product.get_out_of_stock %}
+                                                        <div class="product__card--price price__sale" style="text-align:left;">
+                                                          <p>Out of stock</p>
+                                                        </div>
+                                                      {% elif product.get_same_sale_price %}
+                                                        {% if product.get_sale_price_is_lower_than_store_price %}
+                    
+                                                          <div class="product__card--price price__regular" style="text-align:left;">
+                                                            Rs {{ product.get_lowest_store_price }}
+                                                          </div>
+                                                          <div class="product__card--price price__sale" style="text-align:left;">
+                                                            Rs {{ product.get_lowest_price }}
+                                                          </div>
+                                                        {% else %}
+                                                          <div class="product__card--price" style="text-align:left;">
+                                                            Rs {{ product.get_lowest_price }}
+                                                          </div>
+                                                        {% endif %}
+                                                      {% else %}
+                                                        {% if product.get_sale_price_is_lower_than_store_price %}
+
+                                                          <div class="product__card--price price__regular" style="text-align:left;">
+                                                            Rs {{ product.get_lowest_store_price }} - {{ product.get_highest_store_price }}
+                                                          </div>
+                                                          <div class="product__card--price price__sale" style="text-align:left;">
+                                                            Rs {{ product.get_lowest_price }} - {{ product.get_highest_price }}
+                                                          </div>
+                                                        {% else %}
+
+                                                          <div class="product__card--price" style="text-align:left;">
+                                                            Rs {{ product.get_lowest_price }} - {{ product.get_highest_price }}
+                                                          </div>
+                                                        {% endif %}
+                                                      {% endif %}
+                                                    </div>
+                                                  </div>
+                                                </a>
+                                              </div>
+                                            {% endif %}
+                                          {% endfor %}
+                                     </div>
+                                  {% comment %} Control Pagination {% endcomment %}
+                                    {% if products.paginator.num_pages %}
+                                      {% if not products.paginator.num_pages == 1 %}
+                                        <div class="pagination">
+                                          <div class="pagination__navigation">
+                                            {% if products.has_previous and not products.has_next %}
+                                              <a href="?page={{ products.previous_page_number }}" class="pagination__navigation--btn"
+                                                aria-label="Go to previous page results">
+                                                <i class="fas fa-chevron-left"></i>
+                                              </a>
+                                              <div class="pagination__navigation--fake">
+                                                <i class="fas fa-chevron-right"></i>
+                                              </div>
+                                            {% elif products.has_next and not products.has_previous %}
+                                              <div class="pagination__navigation--fake">
+                                                <i class="fas fa-chevron-left"></i>
+                                              </div>
+                                              <a href="?page={{ products.next_page_number }}" class="pagination__navigation--btn"
+                                                aria-label="Go to next page results">
+                                                <i class="fas fa-chevron-right"></i>
+                                              </a>
+                                            {% elif products.has_next and products.has_previous %}
+                                              <a href="?page={{ products.previous_page_number }}" class="pagination__navigation--btn"
+                                                aria-label="Go to previous page results">
+                                                <i class="fas fa-chevron-left"></i>
+                                              </a>
+                                              <a href="?page={{ products.next_page_number }}" class="pagination__navigation--btn"
+                                                aria-label="Go to next page results">
+                                                <i class="fas fa-chevron-right"></i>
+                                              </a>
+                                            {% else %}
+                                              <div class="pagination__navigation--fake">
+                                                <i class="fas fa-chevron-left"></i>
+                                              </div>
+                                              <div class="pagination__navigation--fake">
+                                                <i class="fas fa-chevron-right"></i>
+                                              </div>
+                                            {% endif %}
+                                          </div>
+                                          <div class="pagination__location">
+                                            Page <span>{{ products.number }}</span> of {{ products.paginator.num_pages }}
+                                          </div>
+                                        </div>
+                                      {% endif %}
+                                    {% endif %}
+                         {% comment %} End product Items Block{% endcomment %}
+
+                         {% comment %} product Items Block{% endcomment %}
+                                       <hr></hr>
+                                          <div class="container">
+                                            <div class="row">
+                                              <div class="col-md-12 text-center">
+                                                <span class="product__card--name" style="color: #cfb;">POPULAR CATEGORIES</span>
+                                                <p></p>
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                     <div class="products__all">
+                                     
+                                          {% for product in categories %}
+                                            {% if product.is_active %}
+                                              <div class="wishlist__item" data-attr="{{ product.id }}">
+                                                {% comment %} product card {% endcomment %}
+                                                <a class="product__card" href="{% url 'category_list' pk=product.pk %}" aria-label="Go to {{ product.name }}">
+                                                  {% comment %} Sale label {% endcomment %}
+                                                  {% if product.get_sale_price_is_lower_than_store_price %}
+                                                    <div class="product__card--discount">
+                                                      <img src="{% static 'images/sale.png' %}" alt="sale Image">
+                                                    </div>
+                                                  {% endif %}
+                                                  {% comment %} New label {% endcomment %}
+                                                  {% if product.get_recently_created %}
+                                                    <!--<div class="product__card--new">
+                                                      New !
+                                                    </div>-->
+                                                  {% endif %}
+                                                  {% comment %} product image {% endcomment %}
+                                                  <div class="product__card--image">
+                                                        <img src="{{ product.photo.url }}" alt="Cover image for {{ product.name }}">
+                                                  <!--
+                                                    {% if product.images.all %}
+                                                      <img src="{{ product.get_main_image }}" alt="Cover image for {{ product.name }}">
+                                                    {% else %}
+                                                      <img src="{% static 'images/default_product_image.png' %}" alt="default product Image">
+                                                    {% endif %}
+                                                    -->
+
+                                                  </div>
+                                                  {% comment %} product name {% endcomment %}
+                                                  <hr></hr>
+                                                  <div class="product__card--name" style="text-align:left;">{{ product.name }}</div>
+                                                  
+
+                                                </a>
+                                              </div>
+        
+                                            {% endif %}
+                                          {% endfor %}
+                                          
+                                     </div>
+                                  {% comment %} Control Pagination {% endcomment %}
+                                    {% if products.paginator.num_pages %}
+                                      {% if not products.paginator.num_pages == 1 %}
+                                        <div class="pagination">
+                                          <div class="pagination__navigation">
+                                            {% if products.has_previous and not products.has_next %}
+                                              <a href="?page={{ products.previous_page_number }}" class="pagination__navigation--btn"
+                                                aria-label="Go to previous page results">
+                                                <i class="fas fa-chevron-left"></i>
+                                              </a>
+                                              <div class="pagination__navigation--fake">
+                                                <i class="fas fa-chevron-right"></i>
+                                              </div>
+                                            {% elif products.has_next and not products.has_previous %}
+                                              <div class="pagination__navigation--fake">
+                                                <i class="fas fa-chevron-left"></i>
+                                              </div>
+                                              <a href="?page={{ products.next_page_number }}" class="pagination__navigation--btn"
+                                                aria-label="Go to next page results">
+                                                <i class="fas fa-chevron-right"></i>
+                                              </a>
+                                            {% elif products.has_next and products.has_previous %}
+                                              <a href="?page={{ products.previous_page_number }}" class="pagination__navigation--btn"
+                                                aria-label="Go to previous page results">
+                                                <i class="fas fa-chevron-left"></i>
+                                              </a>
+                                              <a href="?page={{ products.next_page_number }}" class="pagination__navigation--btn"
+                                                aria-label="Go to next page results">
+                                                <i class="fas fa-chevron-right"></i>
+                                              </a>
+                                            {% else %}
+                                              <div class="pagination__navigation--fake">
+                                                <i class="fas fa-chevron-left"></i>
+                                              </div>
+                                              <div class="pagination__navigation--fake">
+                                                <i class="fas fa-chevron-right"></i>
+                                              </div>
+                                            {% endif %}
+                                          </div>
+                                          <div class="pagination__location">
+                                            Page <span>{{ products.number }}</span> of {{ products.paginator.num_pages }}
+                                          </div>
+                                        </div>
+                                      {% endif %}
+                                    {% endif %}
+                         {% comment %} End product Items Block{% endcomment %}
+      
+
+
+  <section class="home__credits">
+    <h2 class="home__credits--title" style="color: #cfb;">About us:</h2>
+    <div class="credits__subsection center">
+      {% comment %} Icon for high quality {% endcomment %}
+      <div class="credits__image left">
+        <img src="{% static 'images/high-quality.png' %}" alt="high-quality">
+      </div>
+      <h3 class="credits__subsection--title">The best quality</h3>
+      <p>
+        We take a great care of all our Arts: their quality, their packaging, their delivery.
+        <br>
+        The team always keep eye on each item in the store.
+      </p>
+    </div>
+    <div class="credits__subsection center">
+      <div class="credits__image left">
+        <img src="{% static 'images/best-prices.png' %}" alt="best-prices">
+      </div>
+      <h3 class="credits__subsection--title">The best prices</h3>
+      <p>
+        We have a great deals for our customers as we seek to provide the best offers.
+        <br>
+        Additionaly we run promotions for our loyal customers every month!
+      </p>
+    </div>
+    <div class="credits__subsection center">
+      {% comment %} Icon for privacy {% endcomment %}
+      <div class="credits__image left">
+        <img src="{% static 'images/privacy.png' %}" alt="privacy">
+      </div>
+      <h3 class="credits__subsection--title">Your privacy is our priority</h3>
+      <p>
+        We protect all data that we collect from you and we will not share it with anyone.
+        <br>
+        We ensure that your data is safe and secure.
+      </p>
+    </div>
+    <div class="credits__subsection center">
+      {% comment %} icon for fast delivery {% endcomment %}
+      <div class="credits__image left">
+        <img src="{% static 'images/fast-delivery.png' %}" alt="fast-delivery">
+      </div>
+      <h3 class="credits__subsection--title">Fast delivery</h3>
+      <p>
+        We have a great delivery service which is fast and reliable for our customers.
+        <br>
+        We will deliver your products to you in a timely manner, if reachable.
+      </p>
+    </div>
+    <div class="credits__subsection center">
+      {% comment %} Icon for techsupport {% endcomment %}
+      <div class="credits__image left">
+        <img src="{% static 'images/techsupport.png' %}" alt="techsupport">
+      </div>
+      <h3 class="credits__subsection--title">Being in touch</h3>
+      <p>
+        We are always open to discuss new ideas for our Art collection!
+        <br>
+        If you have any Art request or any other question, we will be happy to help you.
+      </p>
+    </div>
+  </section>
+  {% comment %} Testimonials section {% endcomment %}
+  <section class="home__testimonials">
+    {% comment %} Testimonials title {% endcomment %}
+    <h2 class="testimonials__title" style="color: #cfb;">Reviews</h2>
+    <div class="testimonials">
+      {% comment %} Testimonial 1 {% endcomment %}
+      <div class="testimonial testimonial--1">
+        <p class="description">
+          PrestigeArt is the greatest platform for online Art shopping. I love it!
+          I am very happy with the service and the quality of the Arts.
+        </p>
+        <div class="testimonial__author">
+          <div class="testimonial__author--image">
+            <img src="{% static 'images/profile-1.jpg' %}" alt="Portrait of a man">
+          </div>
+          <div class="testimonial__author--data">
+            <h3 class="testimonial__author--name">
+              Ali Goraya
+            </h3>
+            <p class="testimonial__author--position">
+              Regular Customer
+            </p>
+          </div>
+        </div>
+      </div>
+      {% comment %} Testimonial 2 {% endcomment %}
+      <div class="testimonial">
+        <p class="description">
+          Since I am used to be busy with my work, I decided to use PrestigeArt as my art collector.
+          It is a great place to buy all my imaginations.
+        </p>
+        <div class="testimonial__author">
+          <div class="testimonial__author--image">
+            <img src="{% static 'images/profile-2.jpg' %}" alt="Portrait of a man smiling">
+          </div>
+          <div class="testimonial__author--data">
+            <h3 class="testimonial__author--name">
+              Babar Ahmed
+            </h3>
+            <p class="testimonial__author--position">
+              Business Owner
+            </p>
+          </div>
+        </div>
+      </div>
+      {% comment %} Testimonial 3 {% endcomment %}
+      <div class="testimonial">
+        <p class="description">
+          PrestigeArt website is the best online Art store in Pakistan.
+          Great service and great products!
+          I do love to buy special Art Collections.
+        </p>
+        <div class="testimonial__author">
+          <div class="testimonial__author--image">
+            <img src="{% static 'images/profile-3.jpg' %}" alt="Portrait of a woman">
+          </div>
+          <div class="testimonial__author--data">
+            <h3 class="testimonial__author--name">
+              Anney Ali
+            </h3>
+            <p class="testimonial__author--position">
+              Loyal Customer
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+
+{% block postloadjs_extra %}
+  <script>
+    $(document).ready(function () {
+      // reusable function for alert message
+      const messagesAlertData = function(data) {
+        if (data) {
+          if ($('#messages-notes-list').length) {
+            $('#messages-notes-list').remove();
+          }
+          $('.products__all').after('<div class="message-container" id="messages-notes-list">' +
+            '<div class="message-container__message">' +
+              '<p class="message-container__message--text">' + data + '</p>' +
+              '</div>' +
+            '</div>');
+        }
+        setTimeout(() => {
+          $('#messages-notes-list').remove();
+        }, 3000);
+      };
+      // add-to/remove-from wishlist
+      //loop through .wishlist__control
+      $('.wishlist__control').each(function () {
+        $(this).on('click', function(e) {
+          if ($('#messages-notes').length !== 0) {
+            $('#messages-notes').remove();
+          }
+          let product_id = $(this).data('id');
+        // stop propagation to prevent default behavior
+          e.stopPropagation();
+          e.preventDefault();
+          $(this).parent().append('<i class="fas fa-spinner fa-spin"></i>');
+          // AJAX request to add item to the wishlist
+          $.ajax({
+            url: "{% url 'add_remove_product_wishlist_ajax' %}",
+            type: "POST",
+            data: {
+              'product_id': product_id,
+              'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(data) {
+              $('.fa-spinner').remove();
+              if (data.product_in_wishlist) {
+                //replace the with <i class="fas fa-heart"></i>
+                $('.wishlist__control[data-id=' + product_id + ']').html('<i class="fas fa-heart"></i>');
+              } else {
+                //replace the with <i class="far fa-heart"></i>
+                $('.wishlist__control[data-id=' + product_id + ']').html('<i class="far fa-heart"></i>');
+              }
+              if (data.message_alert) {
+                messagesAlertData(data.message_alert);
+              }
+            },
+            error: function(data) {
+              messagesAlertData(data.message_alert);
+            }
+          });
+        });
+      });
+    // Handle search onpage reload
+    if (performance.navigation.type == performance.navigation.TYPE_RELOAD) {
+      window.location.replace(window.location.origin + "/inventory/store/");
+    }
+    });
+  </script>
+
+{% endblock %}
