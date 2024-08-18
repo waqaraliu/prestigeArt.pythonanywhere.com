@@ -184,6 +184,13 @@ USE_L10N = True
 
 USE_TZ = True
 
+CLOUDINARY = {
+      'cloud_name': 'dcbfyvmq7',  
+      'api_key': '675371986696436',  
+      'api_secret': 'FCCU26_vsE8jaDl_30fWPhioLsw',
+      'api_proxy': 'http://proxy.server:3128'
+}
+
 # Cloudinary settings
 cloudinary.config(
     cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
