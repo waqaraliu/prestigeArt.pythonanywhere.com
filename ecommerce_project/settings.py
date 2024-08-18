@@ -17,6 +17,8 @@ import os
 import dj_database_url
 import django_heroku
 
+from dotenv import load_dotenv
+
 if os.path.exists('env.py'):
     import env
 
@@ -27,19 +29,26 @@ import cloudinary.api
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env_path = load_dotenv(os.path.join(BASE_DIR, '.env'))
+load_dotenv(env_path)
+
 # secret key
-SECRET_KEY = os.environ.get("SECRET_KEY")
+#SECRET_KEY = os.environ.get("SECRET_KEY")
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-&psk#na5l=p4c5_a+-$7sg4b^lt3lx1c@d*p4x$ymm_ks7vrb87')
 
 # debug
-DEBUG = os.environ.get("DEBUG") == "True"
+#DEBUG = os.environ.get("DEBUG") == "True"
+
+DEBUG = os.environ.get('DJANGO_DEBUG', '') != 'False'
 
 ALLOWED_HOSTS = [
     '*',
-    '',
     'localhost',
     '127.0.0.1',
-    '0.0.0.0',
+    'prestigeArt.pythonanywhere.com',
 ]
+
+CSRF_TRUSTED_ORIGINS = ['https://prestigeArt.pythonanywhere.com']
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:

@@ -1,7 +1,7 @@
 import os
 
-os.environ["SECRET_KEY"] = '&0er(t#&rcq786(8huxq15l=wobe#muvrq%wnzu=qpb==$d^r)'
-os.environ["DEBUG"] = "True"
+os.environ["DJANGO_SECRET_KEY"] = 'django-insecure-&psk#na5l=p4c5_a+-$7sg4b^lt3lx1c@d*p4x$ymm_ks7vrb87'
+os.environ["DJANGO_DEBUG"] = "False"
 os.environ["DEVELOPMENT"] = "True"
 os.environ["ALLOWED_HOSTS"] = '*'
 os.environ["DATABASE_URL"] = '127.0.0.1'
